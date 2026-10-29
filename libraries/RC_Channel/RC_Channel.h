@@ -295,8 +295,9 @@ public:
         SCRIPTING_7 =        306,
         SCRIPTING_8 =        307,
 
-        // this must be higher than any aux function above
-        AUX_FUNCTION_MAX =   308,
+        CUSTOM_MESSAGE = 308,
+        // this must be higher than any aux function above,
+        AUX_FUNCTION_MAX =   309,
     };
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):

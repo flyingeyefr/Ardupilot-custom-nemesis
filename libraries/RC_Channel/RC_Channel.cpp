@@ -1873,7 +1873,8 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         // monitored by the library itself
         break;
 #endif
-
+    case AUX_FUNC::CUSTOM_MESSAGE:
+        break;
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);
         return false;
