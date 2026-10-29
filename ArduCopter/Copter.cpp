@@ -693,8 +693,8 @@ void Copter::one_hz_loop()
 {
     RC_Channel *ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::CUSTOM_MESSAGE);
     static bool armStatus = false;
-    if (ch != nullptr && ch->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH) {
-        gcs().send_text(MAV_SEVERITY_EMERGENCY, "!AT ARMEE!");
+    if (ch != nullptr && ch->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::LOW) {
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "!TM ARMEE!");
         armStatus = true;
     }
     else if (armStatus) {
