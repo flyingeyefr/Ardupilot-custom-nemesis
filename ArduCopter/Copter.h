@@ -411,6 +411,18 @@ private:
         uint8_t deadreckon          : 1; // true if a dead reckoning failsafe has triggered
     } failsafe;
 
+    // lost-link procedure: Stabilize, climb, disarm.
+    // triggered by RC loss (FS_THR_ENABLE = 8) and/or the video-loss switch (FS_VID_CH)
+    enum class LostLinkState : uint8_t {
+        IDLE,       // nothing running
+        ACTIVE,     // climbing in Stabilize, disarm timer running
+        ABORTED,    // stopped by another failsafe, waits until all links are back before it can trigger again
+    };
+    struct {
+        LostLinkState state;
+        uint32_t start_ms;
+    } lost_link;
+
     bool any_failsafe_triggered() const {
         return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb || failsafe.deadreckon;
     }
@@ -780,6 +792,11 @@ private:
     bool failsafe_option(FailsafeOption opt) const;
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
+    bool lost_link_start(ModeReason reason);
+    void lost_link_update();
+    bool lost_link_climb_active() const;
+    bool lost_link_allows_mode_change(ModeReason reason) const;
+    bool video_loss_switch_active() const;
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     void failsafe_gcs_check();
     void failsafe_gcs_on_event(void);

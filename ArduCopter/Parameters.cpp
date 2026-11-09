@@ -224,7 +224,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values:  0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode (Removed in 4.0+),3:Enabled always Land,4:Enabled always SmartRTL or RTL,5:Enabled always SmartRTL or Land,6:Enabled Auto DO_LAND_START or RTL,7:Enabled always Brake or Land
+    // @Values:  0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode (Removed in 4.0+),3:Enabled always Land,4:Enabled always SmartRTL or RTL,5:Enabled always SmartRTL or Land,6:Enabled Auto DO_LAND_START or RTL,7:Enabled always Brake or Land,8:Enabled Stabilize climb then disarm (TEST ONLY)
     // @User: Standard
     GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_ENABLED_ALWAYS_RTL),
 
@@ -1231,6 +1231,37 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
+
+    // @Param: FS_THR_CLB_THR
+    // @DisplayName: Radio failsafe climb throttle
+    // @Description: Used only when FS_THR_ENABLE = 8. Throttle added on top of the learned hover throttle (MOT_THST_HOVER) while climbing in Stabilize after RC loss. 0.1 means hover + 10% of full throttle.
+    // @Range: 0.0 0.5
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("FS_THR_CLB_THR", 9, ParametersG2, fs_thr_climb_thr, 0.03),
+
+    // @Param: FS_THR_CLB_TIME
+    // @DisplayName: Radio failsafe climb time
+    // @Description: Used only when FS_THR_ENABLE = 8. Time spent climbing in Stabilize after RC loss before the motors are disarmed.
+    // @Units: s
+    // @Range: 1 300
+    // @User: Advanced
+    AP_GROUPINFO("FS_THR_CLB_TIME", 10, ParametersG2, fs_thr_climb_time, 60),
+
+    // @Param: FS_VID_CH
+    // @DisplayName: Video-loss switch channel
+    // @Description: RC channel of the pilot's "video lost" switch. While the switch is below FS_VID_PWM in flight, the vehicle runs the lost-link procedure: Stabilize, level, climb at hover + FS_THR_CLB_THR, disarm after FS_THR_CLB_TIME. Pilot sticks and pilot/GCS mode changes are ignored while it runs, other failsafes (battery, fence, EKF) can still take over. It resets only when the switch is back at or above FS_VID_PWM and RC is not in failsafe, the vehicle then stays in Stabilize until the pilot moves the flight mode switch. 0 disables. The channel's RCx_OPTION must be 0.
+    // @Range: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("FS_VID_CH", 11, ParametersG2, fs_vid_ch, 0),
+
+    // @Param: FS_VID_PWM
+    // @DisplayName: Video-loss switch threshold
+    // @Description: The video-loss switch on FS_VID_CH counts as "video lost" when its PWM is below this value. Values under 800 (no data on the channel) are ignored.
+    // @Units: PWM
+    // @Range: 900 2100
+    // @User: Advanced
+    AP_GROUPINFO("FS_VID_PWM", 12, ParametersG2, fs_vid_pwm, 1200),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 

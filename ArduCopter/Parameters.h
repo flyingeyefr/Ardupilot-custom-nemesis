@@ -676,6 +676,14 @@ public:
     // EKF variance filter cutoff
     AP_Float fs_ekf_filt_hz;
 
+    // radio failsafe "Stabilize climb then disarm" action (FS_THR_ENABLE = 8)
+    AP_Float fs_thr_climb_thr;      // throttle added on top of hover throttle (0..1)
+    AP_Float fs_thr_climb_time;     // seconds to climb before disarming
+
+    // video-loss switch: starts the same Stabilize-climb-disarm procedure
+    AP_Int8  fs_vid_ch;             // RC channel of the pilot's "video lost" switch, 0 = disabled
+    AP_Int16 fs_vid_pwm;            // switch counts as "video lost" below this PWM
+
 #if WEATHERVANE_ENABLED
     AC_WeatherVane weathervane;
 #endif

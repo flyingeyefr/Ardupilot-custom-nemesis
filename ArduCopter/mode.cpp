@@ -286,6 +286,15 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         notify_no_such_mode((uint8_t)mode);
         return false;
     }
+    
+    // lost-link climb: hold Stabilize until RC is OK and the video-loss switch is clear
+    // (or the timer disarms), pilot, GCS and script mode changes are refused, other
+    // failsafes (battery, fence, EKF...) may still take over
+    if (lost_link_climb_active() && !lost_link_allows_mode_change(reason)) {
+        mode_change_failed(new_flightmode, "lost-link climb");
+        return false;
+    }
+
 
     bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 

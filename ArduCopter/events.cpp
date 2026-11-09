@@ -39,6 +39,10 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
+        case FS_THR_ENABLED_STABILIZE_CLIMB_DISARM:
+            //handled below, LAND is the fallback if Stabilize cannot be entered
+            desired_action = FailsafeAction::LAND;
+            break;
         default:
             desired_action = FailsafeAction::LAND;
     }
@@ -70,6 +74,17 @@ void Copter::failsafe_radio_on_event()
         announce_failsafe("Radio", "Continuing Guided Mode");
         desired_action = FailsafeAction::NONE;
 
+    } else if (g.failsafe_throttle == FS_THR_ENABLED_STABILIZE_CLIMB_DISARM) {
+        // Stabilize, climb at hover + FS_THR_CLB_THR for FS_THR_CLB_TIME, then disarm.
+        //If the video-loss procedure is already running, it continues with its original timer
+        if (lost_link_start(ModeReason::RADIO_FAILSAFE)) {
+            announce_failsafe("Radio", "Stabilize climb");
+            desired_action = FailsafeAction::NONE;
+        } else {
+            // desired_action stays LAND (set in the switch above)
+            announce_failsafe("Radio", "Stabilize failed, Land");
+        }
+
     } else {
         announce_failsafe("Radio");
     }
@@ -81,11 +96,129 @@ void Copter::failsafe_radio_on_event()
 // failsafe_off_event - respond to radio contact being regained
 void Copter::failsafe_radio_off_event()
 {
+    // the lost-link procedure is reset in lost_link_update(), once the video-loss switch is clear too
+
     // no need to do anything except log the error as resolved
     // user can now override roll, pitch, yaw and throttle and even use flight mode switch to restore previous flight mode
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_RESOLVED);
     gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe Cleared");
 }
+
+// true while the pilot's video-loss switch (FS_VID_CH) is below FS_VID_PWM
+bool Copter::video_loss_switch_active() const
+{
+    const int8_t ch = g2.fs_vid_ch.get();
+    if (ch <= 0 || ch > NUM_RC_CHANNELS) {
+        return false;
+    }
+    const RC_Channel *c = rc().channel(ch - 1);
+    if (c == nullptr) {
+        return false;
+    }
+    const int16_t pwm = c->get_radio_in();
+    // below 800 means no data on that channel, never treat it as "video lost"
+    return (pwm >= 800) && (pwm < g2.fs_vid_pwm.get());
+}
+
+// mode-change reasons that may interrupt the lost-link climb, other failsafes only
+bool Copter::lost_link_allows_mode_change(ModeReason reason) const
+{
+    switch (reason) {
+    case ModeReason::BATTERY_FAILSAFE:
+    case ModeReason::GCS_FAILSAFE:
+    case ModeReason::EKF_FAILSAFE:
+    case ModeReason::FENCE_BREACHED:
+    case ModeReason::TERRAIN_FAILSAFE:
+    case ModeReason::CRASH_FAILSAFE:
+    case ModeReason::DEADRECKON_FAILSAFE:
+    case ModeReason::AVOIDANCE:
+    case ModeReason::TERMINATE:
+        return true;
+    default:
+        // RC mode switch, aux switches, GCS commands, scripting...
+        return false;
+    }
+}
+
+// true while the lost-link climb is running (used by Stabilize)
+bool Copter::lost_link_climb_active() const
+{
+    return (lost_link.state == LostLinkState::ACTIVE) && motors->armed();
+}
+
+// enter Stabilize and start the lost-link climb, keeps the original timer if already running
+bool Copter::lost_link_start(ModeReason reason)
+{
+    if (lost_link.state == LostLinkState::ACTIVE && flightmode->mode_number() == Mode::Number::STABILIZE) {
+        return true;
+    }
+    if (!set_mode(Mode::Number::STABILIZE, reason)) {
+        return false;
+    }
+    lost_link.state = LostLinkState::ACTIVE;
+    lost_link.start_ms = millis();
+    // the pilot throttle stick is ignored from now on: don't let a low stick
+    // count as "pilot wants motors off" (failsafe disarm, fence disarm, ground idle)
+    ap.throttle_zero = false;
+    return true;
+}
+
+// called from rc_loop: starts the procedure on video-loss switch, resets it when all
+// links are back, aborts it on mode change and disarms after FS_THR_CLB_TIME
+void Copter::lost_link_update()
+{
+    const bool rc_lost = failsafe.radio && (g.failsafe_throttle == FS_THR_ENABLED_STABILIZE_CLIMB_DISARM);
+    const bool vid_lost = video_loss_switch_active();
+
+    switch (lost_link.state) {
+    case LostLinkState::IDLE:
+        // RC loss is started from failsafe_radio_on_event(), here only the video switch
+        if (vid_lost && motors->armed() && !ap.land_complete) {
+            if (lost_link_start(ModeReason::FAILSAFE)) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Video lost - Stabilize climb");
+            } else {
+                // don't retry every loop, wait for the switch to be released
+                lost_link.state = LostLinkState::ABORTED;
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Video lost - Stabilize failed");
+            }
+        }
+        break;
+
+    case LostLinkState::ACTIVE: {
+        if (!motors->armed()) {
+            lost_link.state = LostLinkState::IDLE;
+            break;
+        }
+        if (!rc_lost && !vid_lost) {
+            lost_link.state = LostLinkState::IDLE;
+            gcs().send_text(MAV_SEVERITY_WARNING, "Links restored - climb stopped");
+            break;
+        }
+        if (flightmode->mode_number() != Mode::Number::STABILIZE) {
+            // only another failsafe can get here (pilot/GCS mode changes are refused in set_mode)
+            lost_link.state = LostLinkState::ABORTED;
+            gcs().send_text(MAV_SEVERITY_WARNING, "Lost-link climb stopped by %s", flightmode->name());
+            break;
+        }
+        const uint32_t climb_ms = uint32_t(MAX(g2.fs_thr_climb_time.get(), 0.0f) * 1000.0f);
+        if (millis() - lost_link.start_ms >= climb_ms) {
+            lost_link.state = LostLinkState::IDLE;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Lost-link climb done - Disarming");
+            arming.disarm(rc_lost ? AP_Arming::Method::RADIOFAILSAFE : AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
+        }
+        break;
+    }
+
+    case LostLinkState::ABORTED:
+        // another failsafe took over (or Stabilize could not be entered)
+        // re-arm only once RC is OK and the video-loss switch is clear
+        if (!rc_lost && !vid_lost) {
+            lost_link.state = LostLinkState::IDLE;
+        }
+        break;
+    }
+}
+
 
 void Copter::announce_failsafe(const char *type, const char *action_undertaken)
 {

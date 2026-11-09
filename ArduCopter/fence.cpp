@@ -31,7 +31,13 @@ void Copter::fence_check()
 
         // if the user wants some kind of response and motors are armed
         uint8_t fence_act = fence.get_action();
-        if (fence_act != AC_FENCE_ACTION_REPORT_ONLY ) {
+        if (fence_act == AC_FENCE_ACTION_DISARM) {
+            // FENCE_ACTION = 42 - motors off immediately, in any mode and at any height,
+            // including during the lost-link climb
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Fence breach - motors off");
+            arming.disarm(AP_Arming::Method::FENCEBREACH);
+
+        } else if (fence_act != AC_FENCE_ACTION_REPORT_ONLY ) {
 
             // disarm immediately if we think we are on the ground or in a manual flight mode with zero throttle
             // don't disarm if the high-altitude fence has been broken because it's likely the user has pulled their throttle to zero to bring it down

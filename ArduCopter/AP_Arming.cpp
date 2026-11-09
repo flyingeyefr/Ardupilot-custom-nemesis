@@ -198,6 +198,10 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 return false;
             }
         }
+        if (copter.video_loss_switch_active()) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Video-loss switch on (FS_VID_CH)");
+            return false;
+        }
         if (copter.g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
             // FS_GCS_ENABLE == 2 has been removed
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");

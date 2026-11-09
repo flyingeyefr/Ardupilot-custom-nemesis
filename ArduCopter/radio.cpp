@@ -168,6 +168,12 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 // or the pilot has shut down the copter in the air and it is free-falling
 void Copter::set_throttle_zero_flag(int16_t throttle_control)
 {
+    // lost-link climb: the pilot throttle stick is ignored, so it can't request "motors off"
+    if (lost_link_climb_active()) {
+        ap.throttle_zero = false;
+        return;
+    }
+
     static uint32_t last_nonzero_throttle_ms = 0;
     uint32_t tnow_ms = millis();
 

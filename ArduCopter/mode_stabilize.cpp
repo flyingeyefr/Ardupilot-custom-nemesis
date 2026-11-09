@@ -18,9 +18,20 @@ void ModeStabilize::run()
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate();
 
+    // lost-link climb (RC loss with FS_THR_ENABLE = 8, or video-loss switch FS_VID_CH)-
+    // ignore the pilot sticks, hold level and climb at hover + FS_THR_CLB_THR
+    const bool fs_climb = copter.lost_link_climb_active();
+    if (fs_climb) {
+        target_roll = 0.0f;
+        target_pitch = 0.0f;
+        target_yaw_rate = 0.0f;
+    }
+
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+    } else if (fs_climb) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     } else if (copter.ap.throttle_zero
                || (copter.air_mode == AirMode::AIRMODE_ENABLED && motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN)) {
         // throttle_zero is never true in air mode, but the motors should be allowed to go through ground idle
@@ -33,6 +44,9 @@ void ModeStabilize::run()
     }
 
     float pilot_desired_throttle = get_pilot_desired_throttle();
+    if (fs_climb) {
+        pilot_desired_throttle = constrain_float(motors->get_throttle_hover() + g2.fs_thr_climb_thr, 0.0f, 1.0f);
+    }
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:

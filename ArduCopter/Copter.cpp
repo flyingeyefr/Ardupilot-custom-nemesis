@@ -525,6 +525,7 @@ void Copter::rc_loop()
     // -----------------------------------------
     read_radio();
     rc().read_mode_switch();
+    lost_link_update();
 }
 
 // throttle_loop - should be run at 50 hz
@@ -691,6 +692,18 @@ void Copter::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
+    RC_Channel *ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::CUSTOM_MESSAGE);
+    static bool armStatus = false;
+    if (ch != nullptr && ch->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH) {
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "!TM ARMEE!");
+        armStatus = true;
+    }
+    else if (armStatus) {
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, " ");
+        armStatus = false;
+    }
+
+
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
