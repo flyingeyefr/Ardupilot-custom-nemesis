@@ -188,7 +188,7 @@ define HAL_I2C_INTERNAL_MASK 0
 define AP_COMPASS_IIS2MDC_ENABLED 1
 
 # S'assurer que le moteur Lua est bien activé dans la compilation
-define AP_SCRIPTING_ENABLED 1
+#define AP_SCRIPTING_ENABLED 1
 
 # Embarquer le fichier physique dans le système virtuel du drone
-ROMFS scripts/custom_failsafe.lua scripts/custom_failsafe.lua
+#ROMFS scripts/custom_failsafe.lua scripts/custom_failsafe.lua
