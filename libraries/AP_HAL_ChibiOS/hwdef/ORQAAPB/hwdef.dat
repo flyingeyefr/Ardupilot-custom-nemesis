@@ -232,7 +232,7 @@ define AP_NOTIFY_NEOPIXEL_ENABLED 0
 define AP_AIRSPEED_ENABLED 0
 define AP_RPM_ENABLED 0
 
-
+env DEFAULT_PARAMETERS 'libraries/AP_HAL_ChibiOS/hwdef/ORQAAPB/defaults.param'
 
 # S'assurer que le moteur Lua est bien activé dans la compilation
 #define AP_SCRIPTING_ENABLED 1
