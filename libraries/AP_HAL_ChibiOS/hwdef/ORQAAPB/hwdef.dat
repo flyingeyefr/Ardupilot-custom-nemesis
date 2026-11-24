@@ -192,7 +192,7 @@ define AP_GPS_UBLOX_CFGV2_ENABLED 1
 # --- DÉSACTIVATION DES FONCTIONS INUTILES (OPTIMISATION) ---
 
 # 1. Évitement, Navigation avancée et Indoor
-define AP_AVOIDANCE_ENABLED 0
+
 define HAL_PROXIMITY_ENABLED 0
 define AC_AVOID_ADSB_ENABLED 0
 define AP_RANGEFINDER_ENABLED 0
@@ -233,9 +233,9 @@ define AP_NOTIFY_NEOPIXEL_ENABLED 0
 define AP_AIRSPEED_ENABLED 0
 define AP_RPM_ENABLED 0
 
-env DEFAULT_PARAMETERS 'libraries/AP_HAL_ChibiOS/hwdef/ORQAAPB/defaults.param'
 
-
+#env DEFAULT_PARAMETERS /home/jeremy/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/ORQAAPB/defaults.param
+#ROMFS_WILDCARD /home/jeremy/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/ORQAAPB/defaults.param
 
 # Embarquer le fichier physique dans le système virtuel du drone
 #ROMFS scripts/custom_failsafe.lua scripts/custom_failsafe.lua
