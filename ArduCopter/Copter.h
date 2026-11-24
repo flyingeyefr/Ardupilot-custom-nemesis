@@ -227,6 +227,7 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    friend class ModeCustom;
 
     friend class _AutoTakeoff;
 
@@ -604,7 +605,8 @@ private:
         SMARTRTL_LAND      = 4,
         TERMINATE          = 5,
         AUTO_DO_LAND_START = 6,
-        BRAKE_LAND         = 7
+        BRAKE_LAND         = 7,
+        CUSTOM             = 8
     };
 
     enum class FailsafeOption {
@@ -817,6 +819,7 @@ private:
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
     void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
+    void set_mode_custom(ModeReason reason);
     void set_mode_auto_do_land_start_or_RTL(ModeReason reason);
     void set_mode_brake_or_land_with_pause(ModeReason reason);
     bool should_disarm_on_failsafe();
@@ -1103,7 +1106,7 @@ private:
 #if MODE_TURTLE_ENABLED
     ModeTurtle mode_turtle;
 #endif
-
+    ModeCustom mode_custom;
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);

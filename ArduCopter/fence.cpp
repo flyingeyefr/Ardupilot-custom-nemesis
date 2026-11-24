@@ -104,6 +104,9 @@ void Copter::fence_check()
                             set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         }
                         break;
+                    case AC_Fence::Action::TURN_OFF:
+                        copter.arming.disarm(AP_Arming::Method::FENCEBREACH);
+                        break;
                     }
                 }
             }

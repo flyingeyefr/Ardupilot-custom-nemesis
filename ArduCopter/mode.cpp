@@ -151,7 +151,9 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
         case Mode::Number::TURTLE:
             return &mode_turtle;
 #endif
-
+        case Mode::Number::CUSTOM:
+            return &mode_custom;
+        break;
         default:
             break;
     }
@@ -287,6 +289,7 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 #if MODE_TURTLE_ENABLED
         &copter.mode_turtle,
 #endif
+        &copter.mode_custom
     };
 
     static_assert(ARRAY_SIZE(modes) <= 32, "Flight modes must fit in 32 bit bitmask");

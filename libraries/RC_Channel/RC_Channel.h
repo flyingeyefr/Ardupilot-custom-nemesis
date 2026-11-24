@@ -422,8 +422,9 @@ public:
         STOP_RESTART_SCRIPTING =     316,   // emergency scripting disablement
 #endif  // AP_SCRIPTING_ENABLED
 
+        CUSTOM_MESSAGE = 317,
         // this must be higher than any aux function above
-        AUX_FUNCTION_MAX =   317,
+        AUX_FUNCTION_MAX =   318,
     };
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):

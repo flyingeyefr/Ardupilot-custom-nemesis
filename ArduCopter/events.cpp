@@ -39,6 +39,9 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
+        case FS_THR_ENABLED_CUSTOM:
+            desired_action = FailsafeAction::CUSTOM;
+            break;
         default:
             desired_action = FailsafeAction::LAND;
     }
@@ -414,6 +417,16 @@ void Copter::set_mode_SmartRTL_or_land_with_pause(ModeReason reason)
     set_mode_land_with_pause(reason);
 }
 
+void Copter::set_mode_custom(ModeReason reason)
+{
+    if (set_mode(Mode::Number::CUSTOM, reason)) {
+        AP_Notify::events.failsafe_mode_change = 1;
+        return;
+    }
+
+    set_mode_land_with_pause(reason);
+}
+
 // set_mode_SmartRTL_or_RTL - sets mode to SMART_RTL if possible or RTL if possible or LAND with 4 second delay before descent starts
 // this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
@@ -499,6 +512,9 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
             break;
         case FailsafeAction::SMARTRTL_LAND:
             set_mode_SmartRTL_or_land_with_pause(reason);
+            break;
+        case FailsafeAction::CUSTOM:
+            set_mode_custom(reason);
             break;
         case FailsafeAction::TERMINATE: {
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
