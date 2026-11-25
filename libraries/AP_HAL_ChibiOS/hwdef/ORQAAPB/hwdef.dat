@@ -233,6 +233,8 @@ define AP_NOTIFY_NEOPIXEL_ENABLED 0
 define AP_AIRSPEED_ENABLED 0
 define AP_RPM_ENABLED 0
 
+#allow block logging
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 #env DEFAULT_PARAMETERS /home/jeremy/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/ORQAAPB/defaults.param
 #ROMFS_WILDCARD /home/jeremy/ardupilot/libraries/AP_HAL_ChibiOS/hwdef/ORQAAPB/defaults.param
