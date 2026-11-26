@@ -423,8 +423,9 @@ public:
 #endif  // AP_SCRIPTING_ENABLED
 
         CUSTOM_MESSAGE = 317,
+        CUSTOM_MODE = 318,
         // this must be higher than any aux function above
-        AUX_FUNCTION_MAX =   318,
+        AUX_FUNCTION_MAX =   319,
     };
 
     // auxiliary switch handling (n.b.: we store this as 2-bits!):

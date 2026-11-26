@@ -208,6 +208,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             copter.set_simple_mode(newmode);
             break;
         }
+        
 
 #if MODE_RTL_ENABLED
         case AUX_FUNC::RTL:
@@ -684,6 +685,12 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
         // do nothing, used in tuning.cpp for transmitter based tuning
         break;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+
+    case AUX_FUNC::CUSTOM_MODE:
+        if (ch_flag == AuxSwitchPos::HIGH) {
+        return copter.set_mode(Mode::Number::CUSTOM, ModeReason::RC_COMMAND);
+        }
+        break;
 
     default:
         return RC_Channel::do_aux_function(trigger);

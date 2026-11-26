@@ -30,10 +30,12 @@ void ModeCustom::run()
     if(!copter.failsafe.radio){
         RC_Channel *chn10 = RC_Channels::rc_channel(9);
 
-        if(chn10->get_radio_in() > 1200){
+        if (chn10 == nullptr || chn10->get_radio_in() <= 1800) {
+            if (!copter.set_mode(Mode::Number::LOITER, ModeReason::RADIO_FAILSAFE_RECOVERY)) {
             copter.set_mode(Mode::Number::STABILIZE, ModeReason::RADIO_FAILSAFE_RECOVERY);
+            }
             return;
-        } 
+        }
     }
 
     if(AP_HAL::millis() - fs_start_time_ms >= 60000) {
