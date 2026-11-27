@@ -6,7 +6,8 @@
   Entrée : CH10 en position haute (RC10_OPTION = 318) ou failsafe radio (FS_THR_ENABLE = 8).
   Vol : freinage horizontal, montée de 30 m, coupure des moteurs 60 s après l'entrée.
   Sortie : radio valide et CH10 hors position haute, retour en LOITER,
-           ou en STABILIZE si l'estimation de position est insuffisante.
+           ou en ALT_HOLD si LOITER est refusé (position insuffisante),
+           STABILIZE en dernier secours.
 
   Règle à respecter : dans la boucle où le mode demande un changement de mode,
   les contrôleurs doivent tourner normalement avant l'appel à set_mode().
@@ -54,6 +55,16 @@ void ModeCustom::run()
     if (!motors->armed()) {
         // au sol ou après la coupure : contrôleurs relâchés et mis à jour à chaque boucle
         make_safe_ground_handling();
+    } else if (copter.ap.land_complete) {
+        // entrée en Custom moteurs armés au sol : décollage déclaré par le mode, comme ModeGuided.
+        // Sans cela, le détecteur d'atterrissage voit une poussée de décollage avec land_complete
+        // actif et lève INTERNAL_ERROR(flow_of_control) à la ligne 66 de land_detector.cpp.
+        // Montée en régime avec contrôleurs relâchés (poussée faible), mis à jour à chaque boucle.
+        make_safe_ground_handling(true);
+        if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+            set_land_complete(false);
+            pos_control->D_init_controller();
+        }
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -115,10 +126,10 @@ bool ModeCustom::exit_requested() const
     return chan->get_aux_switch_pos() != RC_Channel::AuxSwitchPos::HIGH;
 }
 
-// retour au pilote : LOITER si la position est fiable, sinon STABILIZE
+// retour au pilote : LOITER, sinon ALT_HOLD, sinon STABILIZE
 void ModeCustom::exit_to_pilot_mode()
 {
-    // une tentative par seconde au maximum si les deux modes sont refusés,
+    // une tentative par seconde au maximum si tous les modes sont refusés,
     // pour éviter une rafale de messages d'échec à 400 Hz
     const uint32_t now_ms = AP_HAL::millis();
     if ((last_exit_attempt_ms != 0) && (now_ms - last_exit_attempt_ms < 1000)) {
@@ -126,8 +137,13 @@ void ModeCustom::exit_to_pilot_mode()
     }
     last_exit_attempt_ms = now_ms;
 
-    if (copter.position_ok() && copter.set_mode(Mode::Number::LOITER, ModeReason::RADIO_FAILSAFE_RECOVERY)) {
+    // sans position, set_mode() refuse LOITER avec le message
+    // "Mode change to Loiter failed: requires position" et un bip d'échec
+    if (copter.set_mode(Mode::Number::LOITER, ModeReason::RADIO_FAILSAFE_RECOVERY)) {
         return;
     }
-    copter.set_mode(Mode::Number::STABILIZE, ModeReason::RADIO_FAILSAFE_RECOVERY);
+    // ALT_HOLD n'exige pas de position, seulement l'altitude (baro)
+    copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::RADIO_FAILSAFE_RECOVERY)
+   
+
 }
