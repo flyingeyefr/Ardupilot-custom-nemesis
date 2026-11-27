@@ -143,7 +143,7 @@ void ModeCustom::exit_to_pilot_mode()
         return;
     }
     // ALT_HOLD n'exige pas de position, seulement l'altitude (baro)
-    copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::RADIO_FAILSAFE_RECOVERY)
+    copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::RADIO_FAILSAFE_RECOVERY);
    
 
 }
