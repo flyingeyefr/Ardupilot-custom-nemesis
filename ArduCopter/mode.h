@@ -1732,7 +1732,8 @@ public:
 
     bool requires_position() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(AP_Arming::Method method) const override { return true; };
+    // armement refusé en Custom : "Arm: Custom mode not armable"
+    bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
     bool allows_save_trim() const override { return false; }
     bool allows_auto_trim() const override { return false; }
@@ -1746,7 +1747,11 @@ public:
     const char *name4() const override { return "CSTM"; }
 
     private:
+    bool exit_requested() const;
+    void exit_to_pilot_mode();
+
     uint32_t fs_start_time_ms;
+    uint32_t last_exit_attempt_ms;
     float target_alt_m;
 };
 

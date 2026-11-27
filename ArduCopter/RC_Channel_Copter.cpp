@@ -21,6 +21,16 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
         return;
     }
 
+    // sélecteur de modes ignoré en Custom : la sortie passe par CH10 (ModeCustom::exit_to_pilot_mode)
+    if (copter.flightmode->mode_number() == Mode::Number::CUSTOM) {
+        const Mode *requested = copter.mode_from_mode_num((Mode::Number)copter.flight_modes[new_pos].get());
+        if (requested != nullptr && requested != copter.flightmode) {
+            // message "Mode change to XXX failed: Custom actif", log ERR et bip d'échec
+            copter.mode_change_failed(requested, "Custom actif");
+        }
+        return;
+    }
+
     if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
         return;
     }
@@ -117,6 +127,7 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
     case AUX_FUNC::AHRS_AUTO_TRIM:
 #endif
+    case AUX_FUNC::CUSTOM_MODE:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
